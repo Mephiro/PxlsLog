@@ -62,7 +62,7 @@ if full_log == False:
                     # This is my pixel!
                     myfile.write(line)
         
-        print('Finished hashing user #'+str(j)+' !')
+        print('Finished hashing logkey #'+str(j)+' !')
         user_key = users_keys.readline().strip('\n')
 
 users_keys.close()

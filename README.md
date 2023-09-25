@@ -13,10 +13,10 @@ Python script for log extraction from pxls.place pixels logs
 You need to create a *log_key.txt* file where you have to place your log key as detailled below
 
 ```
-1  Key_log_1
-2  key_log_2
+1  Log_key_1
+2  Log_key_2
     ...
-N  key_log_N
+N  Log_key_N
 ```
 
 ## Help to get your placemap/placegraph and do timelapses

@@ -1,5 +1,5 @@
 ## Exclude full log files
-*.sanit.log
+*.log
 *.png
 *.txt
 *.gif

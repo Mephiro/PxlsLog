@@ -102,7 +102,7 @@ for i in range(nb_pxls_tot):
     sort_data[0].append(data[0][idx_sort[i]]-data[0][idx_sort[0]])
     
 if full_log == False:    
-    coord_plot = plt.plot([x/3600000 for x in sort_data[0]],sort_data[1])
+    coord_plot = plt.plot([x/3600000 for x in sort_data[0]],sort_data[1],ls='none',marker='.',markersize=1)
     plt.legend(coord_plot,['x','y'])
     plt.xlabel('canvas life (h)')
     plt.ylabel('pixels position')

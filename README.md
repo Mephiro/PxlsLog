@@ -1,5 +1,14 @@
 # PxlsLog
-Python script for log extraction of pxls.place
+Python script for log extraction from pxls.place pixels logs
+
+</br>
+
+## Disclamer :warning:
+**The code is not foolproof at all. If your synthaxe isn't as desired the script will crash or behave randomly !**
+
+</br>
+
+## Help to get your placemap/placegraph and do timelapses !
 
 Normal behavior prompt
 ```

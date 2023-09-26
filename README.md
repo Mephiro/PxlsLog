@@ -30,7 +30,7 @@ Enter .sanit.log path without extention: ./path/to/pxls_place_logs
 Enter inital canvas path without extention: ./path/to/initial_canvas
 Enter key log file path without extention: ./path/to/log_keys
 Enter placemap path+filename without extenion: ./path/to/output_placemap
-Do you want to show full canvas (take a very long time) (yes|no): no
+Do you want to show full canvas (take a very long time) (yes|no): no (if yes: ignore logkey and parse the whole canvas)
 Timelapse (yes|no): no
 Finished hashing logkey #1 !
 ...
@@ -52,7 +52,7 @@ Enter .sanit.log path without extention: ./path/to/pxls_place_logs
 Enter inital canvas path without extention: ./path/to/initial_canvas
 Enter key log file path without extention: ./path/to/log_keys
 Enter placemap path+filename without extenion: ./path/to/output_placemap
-Do you want to show full canvas (take a very long time) (yes|no): no
+Do you want to show full canvas (take a very long time) (yes|no): no (if yes: ignore logkey and parse the whole canvas)
 Timelapse (yes|no): yes
 Enter timelapse crop area (x,y,x+offx,y+offy): (example: 5,200,500,700)
 Enter date & time of timelapse start (%Y-%m-%d %H:%M:%S): (example: 2023-09-25 22:00:00)

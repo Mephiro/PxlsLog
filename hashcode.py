@@ -78,6 +78,7 @@ line = myfile.readline()
 data = [[],[],[]]
 nb_pxls=0
 nb_pxls_tot=0
+nb_undos=0
 while len(line) != 0:
     values = line.split('\t')[0:6]
     nb_pxls_tot+=1
@@ -89,6 +90,7 @@ while len(line) != 0:
         nb_pxls+=1
     elif values[5] == "user undo\n":
         nb_pxls-=1
+        nb_undos+=1
     line = myfile.readline()
 
 print("Finished extract !")
@@ -125,7 +127,7 @@ with Image.open(initcanvasfilename+".png") as im:
 
     print("\nFinished drawing !")
     print("Total number of pixels placed: "+str(nb_pxls))
-    print("Total number of pixels: "+str(nb_pxls_tot))
+    print("Total number of undos: "+str(nb_undos))
 
     if timelapse == True:
         img_gif[0].save(gif_filename+".gif", save_all=True, append_images=img_gif[1:], duration=100, loop=0)

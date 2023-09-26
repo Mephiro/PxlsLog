@@ -42,7 +42,7 @@ Finished extract !
 Drawing pxls : 100.000%
 Finished drawing !
 Total number of pixels placed: nb_of_pixels
-Total number of pixels: nb_of_pixels_and_undos
+Total number of undos: nb_of_undos
 ```
 
 Timelapse behavior prompt
@@ -71,5 +71,5 @@ Finished extract !
 Drawing pxls : 100.000%
 Finished drawing !
 Total number of pixels placed: nb_of_pixels
-Total number of pixels: nb_of_pixels_and_undos
+Total number of undos: nb_of_undos
 ```

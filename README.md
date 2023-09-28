@@ -58,6 +58,8 @@ Enter key log file path without extention: ./path/to/log_keys
 Enter placemap path+filename without extenion: ./path/to/output_placemap
 Do you want to show full canvas (take a very long time) (yes|no): no (if yes: ignore logkey and parse the whole canvas)
 Timelapse (yes|no): yes
+Heatmap mode (yes|no*): yes|no
+Overlay mode (yes|no*): yes|no (**only in heatmap mode**)
 Enter timelapse crop area (x,y,x+offx,y+offy): (example: 5,200,500,700)
 Enter date & time of timelapse start (%Y-%m-%d %H:%M:%S): (example: 2023-09-25 22:00:00)
 Enter duration of timelapse (in sec): (example: 3600)

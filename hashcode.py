@@ -58,7 +58,10 @@ timelapse = input('Timelapse (yes|no*): ')
 if timelapse == 'yes':
     timelapse = True
     heatmap = True if (input('Heatmap mode (yes|no*): ') == "yes") else False
-    overlay = True if (input('Overlay mode (yes|no*): ') == "yes") else False
+    if heatmap:
+        overlay = True if (input('Overlay mode (yes|no*): ') == "yes") else False
+    else:
+        overlay = False
     cropArea = input('Enter timelapse crop area (x,y,x+offx,y+offy): ')
     cropArea = tuple(map(int, cropArea.split(',')))
     timeBegin = input('Enter date & time of timelapse start (%Y-%m-%d %H:%M:%S): ')

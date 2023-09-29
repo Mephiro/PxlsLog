@@ -14,11 +14,15 @@ Python script for log extraction from pxls.place pixels logs
 
 ## Setting up the log key file
 
-You need to create a *log_key.txt* file where you have to place your log key as detailled below
+You need to create a *log_key.txt* file where you have to place your log key as detailled below :
+You can place multiple log keys if you want to merge placemap of different users
 
 ```
-1  Log_key_1
+1  Log_key_1	(One log key per line)
 2  Log_key_2
+3  #00FF00	(Allow to set the color of the following log_key to #00FF00 (green) on the heatmap,
+		without #color the default #FF0000 is used)
+4  Log_key_3
     ...
 N  Log_key_N
 ```
@@ -39,6 +43,9 @@ Enter placemap path+filename without extenion: ./path/to/output_placemap
 Do you want to show full canvas (take a very long time) (yes|no): no (if yes: ignore logkey and parse the whole canvas)
 Timelapse (yes|no): no
 Finished hashing logkey #1 !
+Finished hashing logkey #2 !
+Heatmap color changed to #00FF00
+Finished hashing logkey #3 !
 ...
 Finished hashing logkey #N !
 Finished hashing !
@@ -70,6 +77,9 @@ Enter duration of timelapse (in sec): (example: 3600)
 Enter interval between frames (in sec): (example: 30)
 Enter gif filename: ./path/to/output_gif
 Finished hashing logkey #1 !
+Finished hashing logkey #2 !
+Heatmap color changed to #00FF00
+Finished hashing logkey #3 !
 ...
 Finished hashing logkey #N !
 Finished hashing !

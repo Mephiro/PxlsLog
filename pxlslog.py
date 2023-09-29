@@ -75,22 +75,28 @@ else:
     heatmap = False
     timeBegin = 0
 
-if fullLog == False:
+heatmapColors = "#FF0000"
+
+if not fullLog:
     userKey = users_keys.readline().strip('\n')
     j = 0
     while len(userKey) != 0:
-        j += 1
-        with open(logFilename+'.sanit.log') as logfile:
-            for line in logfile:
-                [date, random_hash, x, y, color_index, action] = line.split('\t')    
-                digest_format = ','.join([date, x, y, color_index, userKey])
-                digested = sha256(digest_format.encode('utf-8')).hexdigest()
-                
-                if digested == random_hash:
-                    # This is my pixel!
-                    myfile.write(line)
-        
-        print('Finished hashing logkey #'+str(j)+' !')
+        colorCheck = (userKey[0] == "#")&(len(userKey) == 7)
+        if colorCheck:
+            heatmapColors = userKey
+            print("Heatmap color changed to "+heatmapColors)
+        else:
+            with open(logFilename+'.sanit.log') as logfile:
+                for line in logfile:
+                    [date, randomHash, x, y, colorIndex, action] = line.split('\t')    
+                    digestFormat = ','.join([date, x, y, colorIndex, userKey])
+                    digested = sha256(digestFormat.encode('utf-8')).hexdigest()
+                    
+                    if digested == randomHash:
+                        # This is my pixel!
+                        myfile.write(line.strip('\n')+'\t'+heatmapColors+'\n')
+            j += 1
+            print('Finished hashing logkey #'+str(j)+' !')
         userKey = users_keys.readline().strip('\n')
 
 users_keys.close()
@@ -101,22 +107,26 @@ if fullLog == False:
     myfile = open('my_pixels.log', 'r')
 else:
     myfile = open(logFilename+'.sanit.log','r')
-    
-line = myfile.readline()
-data = [[],[],[]]
+
+sortData = [[],[],[],[]]
+data = [[],[],[],[]]
 nbPxls=0
 nbPxlsTot=0
 nbUndos=0
+
+line = myfile.readline()
 while len(line) != 0:
-    values = line.split('\t')[0:6]
+    values = line.split('\t')
     nbPxlsTot+=1
     chrono = datetime.strptime(values[0],'%Y-%m-%d %H:%M:%S,%f')
     data[0].append(int(time.mktime(chrono.timetuple())*1e3+chrono.microsecond*1e-3))
     data[1].append((int(values[2]),int(values[3])))
     data[2].append(int(values[4]))
-    if values[5] == "user place\n":
+    if not fullLog:
+        data[3].append(values[6].strip('\n'))
+    if values[5] == "user place":
         nbPxls+=1
-    elif values[5] == "user undo\n":
+    elif values[5] == "user undo":
         nbPxls-=1
         nbUndos+=1
     line = myfile.readline()
@@ -124,14 +134,15 @@ while len(line) != 0:
 print("Finished extract !")
 myfile.close()
 
-sortData = [[],[],[]]
+heatmapOffset = 0 if fullLog else 1
+
 idxSort = np.argsort(data[0])
 for i in range(nbPxlsTot):
-    for k in range(1,3):
+    for k in range(1,3+heatmapOffset):
         sortData[k].append(data[k][idxSort[i]])
     sortData[0].append(data[0][idxSort[i]]-data[0][idxSort[0]])
     
-if fullLog == False:    
+if not fullLog:    
     coord_plot = plt.plot([x/3600000 for x in sortData[0]],sortData[1],ls='none',marker='.',markersize=1)
     plt.legend(coord_plot,['x','y'])
     plt.xlabel('canvas life (h)')
@@ -176,8 +187,12 @@ with Image.open(initCanvasFilename+".png") as im:
                     heatCalque = alphaFunc(heatCalque, 0.8)
                     heatDraw = ImageDraw.Draw(heatCalque)
                     heatPxls = sortData[1][frameStartIdx:frameStopIdx]
-                    for pxl in heatPxls:
-                        heatDraw.point(pxl,"#FF0000")
+                    heatColors = sortData[3][frameStartIdx:frameStopIdx]
+                    for j in range(len(heatPxls)):
+                        if fullLog:
+                            heatDraw.point(heatPxls[j],"#FF0000")
+                        else:
+                            heatDraw.point(heatPxls[j],heatColors[j])
                         
                     if overlay:
                         bgDynamic = brightnessFunc(im, 0.3)

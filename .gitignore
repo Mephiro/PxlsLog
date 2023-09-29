@@ -3,3 +3,4 @@
 *.png
 *.txt
 *.gif
+!osuExample.gif

@@ -31,7 +31,7 @@ N  Log_key_N
 
 Normal behavior prompt
 ```
-user:~$ ./pxlslog.py (or :~$ python3 ./hashcode.py)
+user:~$ ./pxlslog.py (or :~$ python3 ./pxlslog.py)
 
 Warning : You'll need a 'users_keys.txt' file contaning at least one log key (one per line).     
 If multiple log keys are written the placemap will contain the pxls of all the log keys.
@@ -58,7 +58,7 @@ Total number of undos: nb_of_undos
 
 Timelapse behavior prompt
 ```
-user:~$ ./pxlslog.py (or :~$ python3 ./hashcode.py)
+user:~$ ./pxlslog.py (or :~$ python3 ./pxlslog.py)
 
 Warning : You'll need a 'users_keys.txt' file contaning at least one log key (one per line).     
 If multiple log keys are written the placemap will contain the pxls of all the log keys.

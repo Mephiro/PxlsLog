@@ -1,0 +1,7 @@
+## Exclude full log files
+*.log
+*.png
+*.txt
+*.gif
+*.mp4
+!osuExample.gif

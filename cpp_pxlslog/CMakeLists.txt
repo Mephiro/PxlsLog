@@ -4,7 +4,7 @@ project(PxlsLog VERSION 1.0)
 
 add_executable(PxlsLog pxlslog.cxx)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(OpenCV_DIR "~/opencv-4.x/build")

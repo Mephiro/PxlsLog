@@ -73,5 +73,6 @@
         "variant": "cpp",
         "fstream": "cpp",
         "*.ipp": "cpp"
-    }
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

@@ -46,39 +46,40 @@ void alphaFunc(cv::Mat src, cv::Mat dst, const float factor){
     cv::merge(channels,dst);
 }
 
-void pxlsHash(std::string userKeysFilename, std::string logFileFilename,std::vector<pxlsData> *pxlsList,std::string timezone){
-    std::fstream userKeys(userKeysFilename,std::ios::in);
+void pxlsHash(std::string userKeysFilename, std::string logFileFilename,std::vector<pxlsData> *pxlsList,canvas *canvas){
     std::fstream logFile(logFileFilename,std::ios::in);
-
-    std::string heatmapColor = "#FF0000";
+    std::fstream userKeys(userKeysFilename,std::ios::in);
+    std::string logLine;
     std::string userKey;
-    uint nbLogKey = 0;
-    while (std::getline(userKeys,userKey))
-    {
-        if (userKey.find_first_of('#') == 0)
-        {
-            heatmapColor = userKey;
-            std::cout<<"Heatmap color changed to: "<<userKey<<std::endl;
-        }else{
-            nbLogKey +=1;
-            std::cout<<"Extracting pixels from logkey #"<<nbLogKey<<std::endl;
-            std::string logLine;
-            while (std::getline(logFile,logLine))
-            {
-                pxlsData pxlsData(logLine,timezone);
+    std::string heatmapColor;
+    while (std::getline(logFile,logLine)){
+        pxlsData pxlsData(logLine,canvas);
+        while (std::getline(userKeys,userKey)){
+            if (userKey.find_first_of('#') == 0){
+                heatmapColor = userKey;
+            }else{
                 std::string digest = pxlsData.pxlsDigest(userKey);
                 if(hash::isMyPxls(digest,pxlsData.getRandomHash())){
                     pxlsData.addHeatColor(heatmapColor);
-                    pxlsList->push_back(pxlsData);
+                    pxlsData.setMyPixel(true);
                 }
             }
-        }   
+        }
+        if(canvas->fullCanvas()){
+            pxlsList->push_back(pxlsData);
+        }else{
+            if(pxlsData.getMyPixel()){pxlsList->push_back(pxlsData);}
+        }
+        pxlsData.countPxls(canvas);
+        userKeys.clear();
+        userKeys.seekg(0);
     }
     userKeys.close();
     logFile.close();
+    std::cout<<"Extracting pxls done!"<<std::endl;
 }
 
-std::vector<uint> hexToRGB(char const *hexColor){
+std::vector<uint> hexToBGR(char const *hexColor){
     std::vector<uint> color = {0,0,0};
     std::sscanf(hexColor,"#%02x%02x%02x",&color[2],&color[1],&color[0]);
     return color;
@@ -95,6 +96,24 @@ std::vector<std::string> lineParser(std::string line,char separator){
         idx = idxFind+1;
     }
     return parse;
+}
+
+uint64_t unixTimeConv(std::string strTime, std::string timezone){
+    uint idx = strTime.find(',');
+    std::string datetime = strTime.substr(0,idx);
+    uint ms = std::stoi(strTime.substr(idx+1));
+    struct std::tm tm;
+    std::setlocale(LC_ALL,timezone.c_str());
+    if(strptime(datetime.c_str(), "%Y-%m-%d %H:%M:%S",&tm) == NULL){
+        return -1;
+    }
+    uint64_t unixTime = std::mktime(&tm)*1000 + ms;
+    return unixTime;
+}
+
+int lowerBoundIdx(std::vector<pxlsData> *pxlsList, uint64_t unixTime){
+    std::vector<pxlsData>::iterator itrStart = std::lower_bound(pxlsList->begin(),pxlsList->end(),unixTime);
+    return itrStart - pxlsList->begin();
 }
 
 }

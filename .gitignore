@@ -1,0 +1,6 @@
+## ignore scripts output files and log files
+*.log
+*.png
+*.txt
+*.gif
+*.mp4

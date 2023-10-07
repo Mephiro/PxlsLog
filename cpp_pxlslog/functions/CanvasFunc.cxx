@@ -1,18 +1,10 @@
 #include "CanvasFunc.h"
 
-
 namespace pxls{
-
-struct RGBA {
-uchar blue;
-uchar green;
-uchar red;
-uchar alpha;    };
 
 void alphaMerge(cv::Mat src1, cv::Mat src2, cv::Mat dst){
     if ((src1.channels()==4) & (src2.channels()==4))
     {
-
         for (int i = 0; i < src1.rows; i++)
         {
             for (int j = 0; j < src1.cols; j++)
@@ -50,14 +42,66 @@ void brigthnessFunc(cv::Mat src, cv::Mat dst, const float factor){
 void alphaFunc(cv::Mat src, cv::Mat dst, const float factor){
     std::vector<cv::Mat> channels(4);
     cv::split(src,channels);
-    channels[33] = channels[3]*factor;
+    channels[3] = channels[3]*factor;
     cv::merge(channels,dst);
 }
+
+void pxlsHash(std::string userKeysFilename, std::string logFileFilename,std::vector<pxlsData> *pxlsList,std::string timezone){
+    std::fstream userKeys(userKeysFilename,std::ios::in);
+    std::fstream logFile(logFileFilename,std::ios::in);
+
+    std::string heatmapColor = "#FF0000";
+    std::string userKey;
+    uint nbLogKey = 0;
+    while (std::getline(userKeys,userKey))
+    {
+        if (userKey.find_first_of('#') == 0)
+        {
+            heatmapColor = userKey;
+            std::cout<<"Heatmap color changed to: "<<userKey<<std::endl;
+        }else{
+            nbLogKey +=1;
+            std::cout<<"Extracting pixels from logkey #"<<nbLogKey<<std::endl;
+            std::string logLine;
+            while (std::getline(logFile,logLine))
+            {
+                pxlsData pxlsData(logLine,timezone);
+                std::string digest = pxlsData.pxlsDigest(userKey);
+                if(hash::isMyPxls(digest,pxlsData.getRandomHash())){
+                    pxlsData.addHeatColor(heatmapColor);
+                    pxlsList->push_back(pxlsData);
+                }
+            }
+        }   
+    }
+    userKeys.close();
+    logFile.close();
+}
+
+std::vector<uint> hexToRGB(char const *hexColor){
+    std::vector<uint> color = {0,0,0};
+    std::sscanf(hexColor,"#%02x%02x%02x",&color[2],&color[1],&color[0]);
+    return color;
+}
+
+std::vector<std::string> lineParser(std::string line,char separator){
+    int idx = 0;
+    int idxFind = 0;
+    std::vector<std::string> parse;
+    while (idxFind >= 0)
+    {
+        idxFind = line.find(separator,idx);
+        parse.push_back(line.substr(idx,idxFind-idx));
+        idx = idxFind+1;
+    }
+    return parse;
+}
+
 }
 
 namespace hash{
 
-bool SHAdigestComp(const std::string digest,const std::string randomHash){
+bool isMyPxls(const std::string digest,const std::string randomHash){
     unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
 
     char *msg = (char*)digest.c_str();

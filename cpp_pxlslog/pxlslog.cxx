@@ -19,3 +19,7 @@ pxls::palette palette(paletteFileName);
 pxls::pxlsHash(userKeysName,logFileName,&pxlsList,&canvas);
 
 canvas.printPixelNum();
+
+return 0;
+
+}

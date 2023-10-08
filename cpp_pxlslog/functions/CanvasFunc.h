@@ -280,7 +280,7 @@ public:
             newStart = drawFrame(pxlsList,palette,canvas,newStart);
             if(canvas.timelapse()){
                 cv::Mat tempFrame(_bgImg.size(),_bgImg.type());
-                maskOp(tempFrame);
+                maskOp(tempFrame,canvas);
             }
         }
         
@@ -288,25 +288,25 @@ public:
     }
 
 private:
-    void maskOp(cv::Mat tempFrame){
+    void maskOp(cv::Mat tempFrame,canvas canvas){
         if(canvas.overlay()){
-            alphaMerge(_bgImg,_fgImg,tempImg);
+            alphaMerge(_bgImg,_fgImg,tempFrame);
             if(canvas.heatmap()){
-                alphaFunc(tempImg,tempImg,0.3);
-                alphaMerge(tempImg,_heatImg,tempImg);
-                _video.write(tempImg);
+                alphaFunc(tempFrame,tempFrame,0.3);
+                alphaMerge(tempFrame,_heatImg,tempFrame);
+                _video.write(tempFrame);
                 alphaFunc(_heatImg,_heatImg,0.8);
             }else{
-                _video.write(tempImg);
+                _video.write(tempFrame);
             }
         }else{
-            _bgImg.copyTo(tempImg);
+            _bgImg.copyTo(tempFrame);
             if(canvas.heatmap()){
-                alphaFunc(tempImg,tempImg,0.3);
-                alphaMerge(tempImg,_heatImg,tempImg);
-                _video.write(tempImg);
+                alphaFunc(tempFrame,tempFrame,0.3);
+                alphaMerge(tempFrame,_heatImg,tempFrame);
+                _video.write(tempFrame);
             }else{
-                _video.write(tempImg);
+                _video.write(tempFrame);
             }
         }
     }

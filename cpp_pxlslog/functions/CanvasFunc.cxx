@@ -25,7 +25,7 @@ void alphaMerge(cv::Mat src1, cv::Mat src2, cv::Mat dst){
             }
         }
     }else{
-        std::cout << "Error : No alpha channel on one or both of the images" << std::endl;
+        std::cout << "Error : No alpha channel on one or both of the images\n";
     }   
 }
 
@@ -51,7 +51,8 @@ void pxlsHash(std::string userKeysFilename, std::string logFileFilename,std::vec
     std::fstream userKeys(userKeysFilename,std::ios::in);
     std::string logLine;
     std::string userKey;
-    std::string heatmapColor;
+    std::string heatmapColor = "#0000FF";
+    std::cout<<"Extracting pxls in progress...\n";
     while (std::getline(logFile,logLine)){
         pxlsData pxlsData(logLine,canvas);
         while (std::getline(userKeys,userKey)){
@@ -76,12 +77,12 @@ void pxlsHash(std::string userKeysFilename, std::string logFileFilename,std::vec
     }
     userKeys.close();
     logFile.close();
-    std::cout<<"Extracting pxls done!"<<std::endl;
+    std::cout<<"Extracting pxls done!\n";
 }
 
 std::vector<uint> hexToBGR(char const *hexColor){
     std::vector<uint> color = {0,0,0};
-    std::sscanf(hexColor,"#%02x%02x%02x",&color[2],&color[1],&color[0]);
+    std::sscanf(hexColor,"#%02x%02x%02x",&color[0],&color[1],&color[2]);
     return color;
 }
 
@@ -114,6 +115,7 @@ uint64_t unixTimeConv(std::string strTime, std::string timezone){
 int lowerBoundIdx(std::vector<pxlsData> *pxlsList, uint64_t unixTime){
     std::vector<pxlsData>::iterator itrStart = std::lower_bound(pxlsList->begin(),pxlsList->end(),unixTime);
     return itrStart - pxlsList->begin();
+    
 }
 
 }

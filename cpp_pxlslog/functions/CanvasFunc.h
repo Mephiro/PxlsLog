@@ -44,11 +44,13 @@ class canvas {
     
 public:
     canvas(){
+        std::cout<<"Canvas created!\n";
     }
 
     canvas(bool fullcanvas, std::string timezone){
         _fullCanvas = fullcanvas;
         _timezone = timezone;
+        std::cout<<"Canvas created!\n";
     }
 
     canvas(bool timelapse, bool heatmap, bool overlay, bool fullcanvas, std::string timezone,
@@ -59,8 +61,9 @@ public:
         _fullCanvas = fullcanvas;
         _timezone = timezone;
         _timeBegin = unixTimeConv(timeBegin,timezone);
-        _captureDuration = captureDuration;
-        _frameDuration = frameDuration;
+        _captureDuration = captureDuration*1000;
+        _frameDuration = frameDuration*1000;
+        std::cout<<"Canvas created!\n";
     }
 
     std::string timezone(){
@@ -78,13 +81,13 @@ public:
     bool fullCanvas(){
         return _fullCanvas;
     }
-    bool timeBegin(){
+    uint64_t timeBegin(){
         return _timeBegin;
     }
-    bool captureDuration(){
+    uint64_t captureDuration(){
         return _captureDuration;
     }
-    bool frameDuration(){
+    uint64_t frameDuration(){
         return _frameDuration;
     }
     void addPixelsTot(){
@@ -103,10 +106,8 @@ public:
         return {_nbPixelsTotal,_nbUndosTotal,_nbPixelsKeys,_nbUndosKeys};
     }
     void printPixelNum(){
-        std::cout<<"Pixel total canvas: "<<_nbPixelsTotal<<std::endl;
-        std::cout<<"Undo total canvas: "<<_nbPixelsTotal<<std::endl;
-        std::cout<<"Pixel user(s): "<<_nbPixelsTotal<<std::endl;
-        std::cout<<"Undo user(s): "<<_nbPixelsTotal<<std::endl;
+        std::cout<<"Pixel total canvas: "<<_nbPixelsTotal<<" | Undo total canvas: "<<_nbUndosTotal<<"\n";
+        std::cout<<"Pixel user(s): "<<_nbPixelsKeys<<" | Undo user(s): "<<_nbUndosKeys<<"\n";
     }
 };
 
@@ -131,6 +132,7 @@ public:
         }
         paletteFile.close();
         _paletteSize = _colors.size();
+        std::cout<<"Palette created!\n";
     }
     
     std::string getColorName(int colorIndex){
@@ -247,94 +249,107 @@ void pxlsHash(std::string userKeysFilename, std::string logFileFilename,
 
 class drawing {
     cv::Mat _outImg;
-    cv::Mat _outFrame;
     cv::Mat _bgImg;
     cv::Mat _fgImg;
     cv::Mat _heatImg;
     cv::VideoWriter _video;
+
 public:
     drawing(cv::Mat inputImg, canvas canvas){
         inputImg.copyTo(_bgImg);
         _fgImg.create(inputImg.size(),inputImg.type());
         _heatImg.create(inputImg.size(),inputImg.type());
         _outImg.create(inputImg.size(),inputImg.type());
-        _outFrame.create(inputImg.size(),inputImg.type());
-        if (canvas.timelapse())
-        {
-            _video.open("timelapse.mp4",cv::VideoWriter::fourcc('M','P','4','V'),10,_bgImg.size());
+        if(canvas.timelapse()){
+            int fourcc = cv::VideoWriter::fourcc('M', 'J','P','G');
+            cv::Size videoSize(inputImg.size().width, inputImg.size().height);
+            _video.open("timelapse.avi",cv::CAP_OPENCV_MJPEG,fourcc,10,videoSize,true);
         }
-        
+        std::cout<<"Brush created!\n";
     }
 
     ~drawing(){
-        if (_video.isOpened())
-        {
+        if(_video.isOpened()){
             _video.release();
         }
     }
 
     void drawImage(std::vector<pxlsData> *pxlsList, palette palette, canvas canvas){
-        uint64_t newStart = canvas.timeBegin();
-        uint64_t newStop = canvas.timeBegin()+canvas.captureDuration();
-        while (newStart+canvas.frameDuration()<=newStop){
-            newStart = drawFrame(pxlsList,palette,canvas,newStart);
-            if(canvas.timelapse()){
-                cv::Mat tempFrame(_bgImg.size(),_bgImg.type());
-                maskOp(tempFrame,canvas);
+        uint64_t currentTime;
+        uint64_t frameStart;
+        
+        std::cout<<"Drawing in progress...\n";
+        if(canvas.timeBegin() >= pxlsList->at(0).getUnixTime()){
+            currentTime = pxlsList->at(0).getUnixTime();
+            frameStart = canvas.timeBegin();
+        }else{
+            currentTime = canvas.timeBegin();
+            frameStart = pxlsList->at(0).getUnixTime();
+        }
+        uint64_t captureStop = canvas.timeBegin()+canvas.captureDuration();
+        while (currentTime <= frameStart){
+            currentTime = drawFrame(pxlsList,palette,canvas,currentTime);
+            if (canvas.timelapse()){
+                maskOp(canvas);
             }
         }
-        
-        
+        while (currentTime+canvas.frameDuration()<=captureStop){
+            currentTime = drawFrame(pxlsList,palette,canvas,currentTime);
+            if (canvas.timelapse()){
+                maskOp(canvas);
+            }
+        }
+        alphaMerge(_bgImg,_fgImg,_outImg);
+        cv::imwrite("placemap.png",_outImg);
+        std::cout<<"Drawing finished!\n";
     }
 
 private:
-    void maskOp(cv::Mat tempFrame,canvas canvas){
+    void maskOp(canvas canvas){
+        cv::Mat tempFrame(_bgImg.size(),_bgImg.type());
         if(canvas.overlay()){
             alphaMerge(_bgImg,_fgImg,tempFrame);
             if(canvas.heatmap()){
-                alphaFunc(tempFrame,tempFrame,0.3);
+                brigthnessFunc(tempFrame,tempFrame,0.3);
                 alphaMerge(tempFrame,_heatImg,tempFrame);
-                _video.write(tempFrame);
                 alphaFunc(_heatImg,_heatImg,0.8);
-            }else{
-                _video.write(tempFrame);
             }
         }else{
-            _bgImg.copyTo(tempFrame);
             if(canvas.heatmap()){
+                _bgImg.copyTo(tempFrame);
                 alphaFunc(tempFrame,tempFrame,0.3);
                 alphaMerge(tempFrame,_heatImg,tempFrame);
-                _video.write(tempFrame);
             }else{
-                _video.write(tempFrame);
+                _fgImg.copyTo(tempFrame);
             }
         }
+        _video.write(tempFrame);
     }
 
-    void drawPxls(cv::Mat img, pxlsData pxlsData, palette palette){
+    void drawPxls(pxlsData pxlsData, palette palette){
         std::vector<int> currentCoord = pxlsData.getCoord();
         std::vector<uint> currentColor = palette.getColor(pxlsData.getColorIndex());
-        cv::circle(img,cv::Point(currentCoord[0],currentCoord[1]),0,
-        cv::Scalar(currentColor[0],currentColor[1],currentColor[2]),cv::FILLED);
+        cv::circle(_fgImg,cv::Point(currentCoord[0],currentCoord[1]),0,
+        cv::Scalar(currentColor[0],currentColor[1],currentColor[2],255),cv::FILLED);
     }
 
-    void drawPxls(cv::Mat img, pxlsData pxlsData){
+    void drawPxls(pxlsData pxlsData){
         std::vector<int> currentCoord = pxlsData.getCoord();
         std::vector<uint> currentColor = pxlsData.getHeatColor();
-        cv::circle(img,cv::Point(currentCoord[0],currentCoord[1]),0,
-        cv::Scalar(currentColor[0],currentColor[1],currentColor[2]),cv::FILLED);
+        cv::circle(_heatImg,cv::Point(currentCoord[0],currentCoord[1]),0,
+        cv::Scalar(currentColor[0],currentColor[1],currentColor[2],255),cv::FILLED);
     }
 
-    uint64_t drawFrame(std::vector<pxlsData> *pxlsList, palette palette, canvas canvas, uint64_t tStart){
-        int idxStart = lowerBoundIdx(pxlsList,tStart);
-        int idxStop = lowerBoundIdx(pxlsList,tStart+canvas.frameDuration());
-        for (int i = idxStart; i < idxStop; i++){   
-            drawPxls(_fgImg,pxlsList->at(i),palette);
+    uint64_t drawFrame(std::vector<pxlsData> *pxlsList, palette palette, canvas canvas, uint64_t currentTime){
+        int idxStart = lowerBoundIdx(pxlsList,currentTime);
+        int idxStop = lowerBoundIdx(pxlsList,currentTime+canvas.frameDuration());
+        for (int i = idxStart; i < idxStop; i++){
+            drawPxls(pxlsList->at(i),palette);
             if(canvas.heatmap()){
-                drawPxls(_heatImg,pxlsList->at(i));
+                if (pxlsList->at(i).getMyPixel()){drawPxls(pxlsList->at(i));}
             }
         }
-        return tStart+canvas.frameDuration();
+        return currentTime+canvas.frameDuration();
     }
 };
 }

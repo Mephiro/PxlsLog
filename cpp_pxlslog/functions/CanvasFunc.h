@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <fstream>
 #include <algorithm>
+#include <thread>
+#include <mutex>
 #include <openssl/evp.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -21,9 +23,11 @@ uchar red;
 uchar alpha;
 };
 
+void UI_init();
 std::vector<uint> hexToBGR(char const *hexColor);
 std::vector<std::string> lineParser(std::string line,char separator);
 uint64_t unixTimeConv(std::string strTime, std::string timezone);
+std::vector<std::string> subVector (int idxStart,int idxStop, std::vector<std::string> *data);
 
 class canvas {
     bool _timelapse = false;
@@ -146,6 +150,30 @@ public:
     }
 };
 
+class rawData {
+public:
+    std::vector<std::string> LogKeys;
+    std::vector<std::string> LogPixels;
+
+    rawData(std::string userKeysFilename, std::string logFileFilename){
+        std::fstream logFile(logFileFilename,std::ios::in);
+        std::fstream userKeys(userKeysFilename,std::ios::in);
+        std::string logLine;
+        std::string userKey;
+        while (std::getline(logFile,logLine))
+        {
+            LogPixels.push_back(logLine);
+        }
+        while (std::getline(userKeys,userKey))
+        {
+            LogKeys.push_back(userKey);
+        }
+        userKeys.close();
+        logFile.close();
+    }
+
+};
+
 class pxlsData {
     uint64_t _unixDate = 0;
     std::string _date = "";
@@ -244,8 +272,9 @@ int lowerBoundIdx(std::vector<pxlsData> *pxlsList, uint64_t unixTime);
 void alphaMerge(cv::Mat src1, cv::Mat src2, cv::Mat dst);
 void brigthnessFunc(cv::Mat src, cv::Mat dst, const float factor);
 void alphaFunc(cv::Mat src, cv::Mat dst, const float factor);
-void pxlsHash(std::string userKeysFilename, std::string logFileFilename,
+void pxlsHash(std::vector<std::string> rawPxls,std::vector<std::string> rawKeys,
               std::vector<pxlsData> *pxlsList,canvas *canvas);
+void threadingHash(int nbCore, std::vector<pxlsData> *PxlsList,rawData *rawData,canvas *canvas);
 
 class drawing {
     cv::Mat _outImg;
@@ -305,6 +334,7 @@ public:
     }
 
 private:
+
     void maskOp(canvas canvas){
         cv::Mat tempFrame(_bgImg.size(),_bgImg.type());
         if(canvas.overlay()){

@@ -2,6 +2,14 @@
 
 namespace pxls{
 
+std::mutex mtx;
+
+void UI_init(){
+    std::string crop;
+    std::cin >> crop;
+    std::cout << crop <<"\n";
+}
+
 void alphaMerge(cv::Mat src1, cv::Mat src2, cv::Mat dst){
     if ((src1.channels()==4) & (src2.channels()==4))
     {
@@ -46,16 +54,38 @@ void alphaFunc(cv::Mat src, cv::Mat dst, const float factor){
     cv::merge(channels,dst);
 }
 
-void pxlsHash(std::string userKeysFilename, std::string logFileFilename,std::vector<pxlsData> *pxlsList,canvas *canvas){
-    std::fstream logFile(logFileFilename,std::ios::in);
-    std::fstream userKeys(userKeysFilename,std::ios::in);
-    std::string logLine;
-    std::string userKey;
-    std::string heatmapColor = "#0000FF";
+void threadingHash(int nbCore, std::vector<pxlsData> *PxlsList,rawData *rawData,canvas *canvas){
     std::cout<<"Extracting pxls in progress...\n";
-    while (std::getline(logFile,logLine)){
-        pxlsData pxlsData(logLine,canvas);
-        while (std::getline(userKeys,userKey)){
+    int increment = rawData->LogPixels.size()/nbCore;
+    std::vector<std::thread> vecThread;
+    std::vector<std::string> vecPxls;
+
+    for (int core = 0; core < nbCore; core++)
+    {
+        if (core == (nbCore-1)){
+            vecPxls = subVector(core*increment,rawData->LogPixels.size(),&(rawData->LogPixels));
+        }else{
+            vecPxls = subVector(core*increment,(core+1)*increment,&(rawData->LogPixels));
+        }
+        
+        vecThread.push_back(std::thread(pxlsHash,vecPxls,rawData->LogKeys,PxlsList,canvas));
+    }
+    for(int core = 0; core < nbCore; core++){
+        vecThread.at(core).join();
+    }
+
+    std::sort(PxlsList->begin(),PxlsList->end());
+    std::cout<<"Extracting pxls done!\n";
+}
+
+void pxlsHash(std::vector<std::string> rawPxls,std::vector<std::string> rawKeys,
+              std::vector<pxlsData> *pxlsList,canvas *canvas){
+                
+    std::string heatmapColor = "#0000FF";
+    for (int i = 0; i < rawPxls.size(); i++){
+        pxlsData pxlsData(rawPxls.at(i),canvas);
+        for (int j = 0; j < rawKeys.size(); j++){
+            std::string userKey = rawKeys.at(j);
             if (userKey.find_first_of('#') == 0){
                 heatmapColor = userKey;
             }else{
@@ -66,18 +96,15 @@ void pxlsHash(std::string userKeysFilename, std::string logFileFilename,std::vec
                 }
             }
         }
+        mtx.lock();
         if(canvas->fullCanvas()){
             pxlsList->push_back(pxlsData);
         }else{
             if(pxlsData.getMyPixel()){pxlsList->push_back(pxlsData);}
         }
         pxlsData.countPxls(canvas);
-        userKeys.clear();
-        userKeys.seekg(0);
+        mtx.unlock();
     }
-    userKeys.close();
-    logFile.close();
-    std::cout<<"Extracting pxls done!\n";
 }
 
 std::vector<uint> hexToBGR(char const *hexColor){
@@ -118,8 +145,14 @@ int lowerBoundIdx(std::vector<pxlsData> *pxlsList, uint64_t unixTime){
     
 }
 
+std::vector<std::string> subVector (int idxStart,int idxStop, std::vector<std::string> *data){
+    std::vector<std::string>::iterator first = data->begin()+idxStart;
+    std::vector<std::string>::iterator last = data->begin()+idxStop;
+    std::vector<std::string> output(first,last);
+    return output;
 }
 
+}
 namespace hash{
 
 bool isMyPxls(const std::string digest,const std::string randomHash){

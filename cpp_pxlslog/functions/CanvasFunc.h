@@ -27,13 +27,15 @@ void UI_init();
 std::vector<uint> hexToBGR(char const *hexColor);
 std::vector<std::string> lineParser(std::string line,char separator);
 uint64_t unixTimeConv(std::string strTime, std::string timezone);
-std::vector<std::string> subVector (int idxStart,int idxStop, std::vector<std::string> *data);
+std::vector<std::string> subVector(const std::vector<std::string> *vec, size_t startIdx, size_t endIdx);
 
 class canvas {
     bool _timelapse = false;
     bool _heatmap = false;
     bool _overlay = false;
     bool _fullCanvas = false;
+
+    std::vector<uint> _crop = {0,0,0,0};
 
     uint64_t _timeBegin = 0;
     uint64_t _captureDuration = 0;
@@ -94,6 +96,11 @@ public:
     uint64_t frameDuration(){
         return _frameDuration;
     }
+    void setTimes(uint64_t timeBegin,uint64_t captureDuration,uint64_t frameDuration){
+        _timeBegin = timeBegin;
+        _captureDuration = captureDuration;
+        _frameDuration = frameDuration;
+    }
     void addPixelsTot(){
         _nbPixelsTotal +=1;
     }
@@ -148,30 +155,6 @@ public:
     int getPaletteSize(){
         return _paletteSize;
     }
-};
-
-class rawData {
-public:
-    std::vector<std::string> LogKeys;
-    std::vector<std::string> LogPixels;
-
-    rawData(std::string userKeysFilename, std::string logFileFilename){
-        std::fstream logFile(logFileFilename,std::ios::in);
-        std::fstream userKeys(userKeysFilename,std::ios::in);
-        std::string logLine;
-        std::string userKey;
-        while (std::getline(logFile,logLine))
-        {
-            LogPixels.push_back(logLine);
-        }
-        while (std::getline(userKeys,userKey))
-        {
-            LogKeys.push_back(userKey);
-        }
-        userKeys.close();
-        logFile.close();
-    }
-
 };
 
 class pxlsData {
@@ -272,9 +255,8 @@ int lowerBoundIdx(std::vector<pxlsData> *pxlsList, uint64_t unixTime);
 void alphaMerge(cv::Mat src1, cv::Mat src2, cv::Mat dst);
 void brigthnessFunc(cv::Mat src, cv::Mat dst, const float factor);
 void alphaFunc(cv::Mat src, cv::Mat dst, const float factor);
-void pxlsHash(std::vector<std::string> rawPxls,std::vector<std::string> rawKeys,
-              std::vector<pxlsData> *pxlsList,canvas *canvas);
-void threadingHash(int nbCore, std::vector<pxlsData> *PxlsList,rawData *rawData,canvas *canvas);
+void pxlsHash(std::vector<pxlsData> *pxlsList, std::string pxlsLogName, std::vector<std::string> userKeys,canvas *canvas, int lineStart, int lineStop);
+void threadingHash(int nbCore, std::vector<pxlsData> *PxlsList, const std::string pxlsLogName,const std::string keysLogName, canvas *canvas);
 
 class drawing {
     cv::Mat _outImg;
@@ -306,8 +288,16 @@ public:
     void drawImage(std::vector<pxlsData> *pxlsList, palette palette, canvas canvas){
         uint64_t currentTime;
         uint64_t frameStart;
-        
+        uint64_t captureStop;
+
         std::cout<<"Drawing in progress...\n";
+
+        if (canvas.timeBegin() == 0){
+            canvas.setTimes(pxlsList->at(0).getUnixTime(),pxlsList->back().getUnixTime(),
+                            pxlsList->back().getUnixTime()-pxlsList->at(0).getUnixTime());
+         }
+
+        captureStop = canvas.timeBegin()+canvas.captureDuration();
         if(canvas.timeBegin() >= pxlsList->at(0).getUnixTime()){
             currentTime = pxlsList->at(0).getUnixTime();
             frameStart = canvas.timeBegin();
@@ -315,7 +305,7 @@ public:
             currentTime = canvas.timeBegin();
             frameStart = pxlsList->at(0).getUnixTime();
         }
-        uint64_t captureStop = canvas.timeBegin()+canvas.captureDuration();
+        
         while (currentTime <= frameStart){
             currentTime = drawFrame(pxlsList,palette,canvas,currentTime);
             if (canvas.timelapse()){
@@ -353,6 +343,7 @@ private:
                 _fgImg.copyTo(tempFrame);
             }
         }
+        cv::cvtColor(tempFrame,tempFrame,cv::COLOR_BGRA2RGBA);
         _video.write(tempFrame);
     }
 
@@ -376,7 +367,9 @@ private:
         for (int i = idxStart; i < idxStop; i++){
             drawPxls(pxlsList->at(i),palette);
             if(canvas.heatmap()){
-                if (pxlsList->at(i).getMyPixel()){drawPxls(pxlsList->at(i));}
+                if (pxlsList->at(i).getMyPixel()){
+                    drawPxls(pxlsList->at(i));
+                }
             }
         }
         return currentTime+canvas.frameDuration();

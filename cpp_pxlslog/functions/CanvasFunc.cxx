@@ -5,9 +5,19 @@ namespace pxls{
 std::mutex mtx;
 
 void UI_init(){
-    std::string crop;
-    std::cin >> crop;
-    std::cout << crop <<"\n";
+    std::cout<<"┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"<<"\n";
+    std::cout<<"┃ ██████╗ ██╗  ██╗██╗     ███████╗██╗      ██████╗  ██████╗  ┃"<<"\n";
+    std::cout<<"┃ ██╔══██╗╚██╗██╔╝██║     ██╔════╝██║     ██╔═══██╗██╔════╝  ┃"<<"\n";
+    std::cout<<"┃ ██████╔╝ ╚███╔╝ ██║     ███████╗██║     ██║   ██║██║  ███╗ ┃"<<"\n";
+    std::cout<<"┃ ██╔═══╝  ██╔██╗ ██║     ╚════██║██║     ██║   ██║██║   ██║ ┃"<<"\n";
+    std::cout<<"┃ ██║     ██╔╝ ██╗███████╗███████║███████╗╚██████╔╝╚██████╔╝ ┃"<<"\n";
+    std::cout<<"┃ ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝ ╚═════╝  ╚═════╝  ┃"<<"\n";
+    std::cout<<"┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"<<"\n";
+    std::cout<<"\n\n";
+    std::cout<<"Enter the crop area for timelapse (example : X0 Y0 X0+Xoff Y0+Yoff): ";
+    uint cropX, cropY, cropXoff, cropYoff;
+    std::cin >> cropX >> cropY >> cropXoff >> cropYoff;
+    std::vector<uint> cropArea = {cropX,cropY,cropXoff,cropYoff};
 }
 
 void alphaMerge(cv::Mat src1, cv::Mat src2, cv::Mat dst){
@@ -54,57 +64,81 @@ void alphaFunc(cv::Mat src, cv::Mat dst, const float factor){
     cv::merge(channels,dst);
 }
 
-void threadingHash(int nbCore, std::vector<pxlsData> *PxlsList,rawData *rawData,canvas *canvas){
-    std::cout<<"Extracting pxls in progress...\n";
-    int increment = rawData->LogPixels.size()/nbCore;
-    std::vector<std::thread> vecThread;
-    std::vector<std::string> vecPxls;
+void threadingHash(int nbCore, std::vector<pxlsData> *PxlsList, const std::string pxlsLogName,
+                   const std::string keysLogName, canvas *canvas){
 
-    for (int core = 0; core < nbCore; core++)
-    {
-        if (core == (nbCore-1)){
-            vecPxls = subVector(core*increment,rawData->LogPixels.size(),&(rawData->LogPixels));
+    std::cout<<"Extracting pxls in progress...\n";
+
+    std::fstream userPxls(pxlsLogName,std::ios::in);
+    int lineCount = 0;
+    std::string line;
+    while (std::getline(userPxls,line)){
+        lineCount++;
+    }
+    userPxls.close();
+
+    int increment = lineCount/nbCore;
+
+    std::fstream userKeys(keysLogName,std::ios::in);
+    std::vector<std::string> userKeyVec;
+    std::string userKey;
+    while (std::getline(userKeys,userKey)){
+        userKeyVec.push_back(userKey);
+    }
+    userKeys.close();
+
+    std::vector<std::thread> vecThread;
+    for (int core = 0; core < nbCore; core++){
+        if (core == nbCore-1){
+            vecThread.push_back(std::thread(pxlsHash,PxlsList,pxlsLogName,userKeyVec,canvas,core*increment,lineCount));
         }else{
-            vecPxls = subVector(core*increment,(core+1)*increment,&(rawData->LogPixels));
+            vecThread.push_back(std::thread(pxlsHash,PxlsList,pxlsLogName,userKeyVec,canvas,core*increment,(core+1)*increment));
         }
-        
-        vecThread.push_back(std::thread(pxlsHash,vecPxls,rawData->LogKeys,PxlsList,canvas));
     }
     for(int core = 0; core < nbCore; core++){
         vecThread.at(core).join();
     }
-
     std::sort(PxlsList->begin(),PxlsList->end());
     std::cout<<"Extracting pxls done!\n";
 }
 
-void pxlsHash(std::vector<std::string> rawPxls,std::vector<std::string> rawKeys,
-              std::vector<pxlsData> *pxlsList,canvas *canvas){
-                
+void pxlsHash(std::vector<pxlsData> *pxlsList, std::string pxlsLogName, std::vector<std::string> userKeys,
+              canvas *canvas, int lineStart, int lineStop){
+    
+    int lineCount = 0;
+    std::fstream logFile(pxlsLogName,std::ios::in);
+    std::string logLine;
+    std::string userKey;
     std::string heatmapColor = "#0000FF";
-    for (int i = 0; i < rawPxls.size(); i++){
-        pxlsData pxlsData(rawPxls.at(i),canvas);
-        for (int j = 0; j < rawKeys.size(); j++){
-            std::string userKey = rawKeys.at(j);
-            if (userKey.find_first_of('#') == 0){
-                heatmapColor = userKey;
-            }else{
-                std::string digest = pxlsData.pxlsDigest(userKey);
-                if(hash::isMyPxls(digest,pxlsData.getRandomHash())){
-                    pxlsData.addHeatColor(heatmapColor);
-                    pxlsData.setMyPixel(true);
+    while (std::getline(logFile,logLine)){
+        if(lineCount>=lineStart && lineCount<lineStop){
+            pxlsData pxlsData(logLine,canvas);
+            heatmapColor = "#0000FF";
+            for (int i = 0; i < userKeys.size(); i++){
+                userKey = userKeys.at(i);
+                if (userKey.find_first_of('#') == 0){
+                    heatmapColor = userKey;
+                }else{
+                    std::string digest = pxlsData.pxlsDigest(userKey);
+                    if(hash::isMyPxls(digest,pxlsData.getRandomHash())){
+                        pxlsData.addHeatColor(heatmapColor);
+                        pxlsData.setMyPixel(true);
+                        i = userKeys.size();
+                    }
                 }
             }
+            mtx.lock();
+            if(canvas->fullCanvas()){
+                pxlsList->push_back(pxlsData);
+            }else{
+                if(pxlsData.getMyPixel()){pxlsList->push_back(pxlsData);}
+            }
+            pxlsData.countPxls(canvas);
+            mtx.unlock();
         }
-        mtx.lock();
-        if(canvas->fullCanvas()){
-            pxlsList->push_back(pxlsData);
-        }else{
-            if(pxlsData.getMyPixel()){pxlsList->push_back(pxlsData);}
-        }
-        pxlsData.countPxls(canvas);
-        mtx.unlock();
+        lineCount++;
     }
+    logFile.close();
 }
 
 std::vector<uint> hexToBGR(char const *hexColor){
@@ -145,11 +179,15 @@ int lowerBoundIdx(std::vector<pxlsData> *pxlsList, uint64_t unixTime){
     
 }
 
-std::vector<std::string> subVector (int idxStart,int idxStop, std::vector<std::string> *data){
-    std::vector<std::string>::iterator first = data->begin()+idxStart;
-    std::vector<std::string>::iterator last = data->begin()+idxStop;
-    std::vector<std::string> output(first,last);
-    return output;
+std::vector<std::string>  subVector(const std::vector<std::string> *vec, size_t startIdx, size_t endIdx){
+    if (startIdx >= vec->size() || endIdx > vec->size() || startIdx > endIdx) {
+        throw std::out_of_range("Invalid subvector indices");
+    }
+    
+    auto start = vec->begin() + startIdx;
+    auto end = vec->begin() + endIdx;
+
+    return std::vector<std::string>(start, end);
 }
 
 }

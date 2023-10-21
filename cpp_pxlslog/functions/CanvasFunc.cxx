@@ -6,6 +6,7 @@ namespace pxls{
 std::mutex mtx;
 
 canvas UI_init(std::string *userkeyFilename, std::string *logFilename, std::string *paletteFilename, std::string *canvasFileName){
+    system ("clear");
     std::cout<<"┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"<<"\n";
     std::cout<<"┃ ██████╗ ██╗  ██╗██╗     ███████╗██╗      ██████╗  ██████╗  ┃"<<"\n";
     std::cout<<"┃ ██╔══██╗╚██╗██╔╝██║     ██╔════╝██║     ██╔═══██╗██╔════╝  ┃"<<"\n";

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdlib.h>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -295,10 +296,10 @@ public:
         uint64_t frameStart;
         uint64_t captureStop;
         cv::VideoWriter video;
-        int fourcc = cv::VideoWriter::fourcc('a', 'v', 'c', '1');;
+        int fourcc = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');;
         cv::Size videoSize(xcrop.size(),ycrop.size());
         if(canvas.timelapse()){
-            video.open("timelapse.mp4",cv::CAP_FFMPEG,fourcc,10,videoSize,true);
+            video.open("timelapse.avi",cv::CAP_OPENCV_MJPEG,fourcc,10,videoSize,true);
         }
         
         std::cout<<"Drawing in progress...\n";
@@ -334,14 +335,17 @@ public:
         }
 
         cv::imwrite("placemap.png",_outImg);
-        std::cout<<"Drawing finished!\n";
-        video.release();
+        std::cout<<"Drawing finished!\n\n";
+        if (canvas.timelapse()){
+            //system("./avi2mp4.sh");
+            video.release();
+        }
     }
 
     void showPlacemap(){
         cv::resize(_outImg,_outImg,_outImg.size()/2);
         cv::imshow("Output Placemap",_outImg);
-        std::cout << "Press Esc to close.\n";
+        std::cout << "\nPress Esc to close.\n";
         cv::waitKey();
     }
 

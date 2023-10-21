@@ -21,6 +21,5 @@ canvas.printPixelNum();
 drawing.drawImage(&pxlsList,palette,canvas);
 
 drawing.showPlacemap();
-
 return 0;
 }

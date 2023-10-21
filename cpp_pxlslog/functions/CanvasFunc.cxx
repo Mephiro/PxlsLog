@@ -1,10 +1,11 @@
 #include "CanvasFunc.h"
 
+
 namespace pxls{
 
 std::mutex mtx;
 
-void UI_init(){
+canvas UI_init(std::string *userkeyFilename, std::string *logFilename, std::string *paletteFilename, std::string *canvasFileName){
     std::cout<<"┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"<<"\n";
     std::cout<<"┃ ██████╗ ██╗  ██╗██╗     ███████╗██╗      ██████╗  ██████╗  ┃"<<"\n";
     std::cout<<"┃ ██╔══██╗╚██╗██╔╝██║     ██╔════╝██║     ██╔═══██╗██╔════╝  ┃"<<"\n";
@@ -14,10 +15,110 @@ void UI_init(){
     std::cout<<"┃ ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝ ╚═════╝  ╚═════╝  ┃"<<"\n";
     std::cout<<"┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"<<"\n";
     std::cout<<"\n\n";
-    std::cout<<"Enter the crop area for timelapse (example : X0 Y0 X0+Xoff Y0+Yoff): ";
-    uint cropX, cropY, cropXoff, cropYoff;
-    std::cin >> cropX >> cropY >> cropXoff >> cropYoff;
-    std::vector<uint> cropArea = {cropX,cropY,cropXoff,cropYoff};
+    std::cout<<"Enter the userkey path to file (default : userkey.txt): ";
+    std::string userkey;
+    getline(std::cin,userkey);
+    if (userkey == ""){
+        *userkeyFilename = "userkey.txt";
+    }else{
+        *userkeyFilename = userkey;
+    }
+
+    std::cout<<"Enter the pxls log path to file (default : pixels.log): ";
+    std::string log;
+    getline(std::cin,log);
+    if (log == ""){
+        *logFilename = "pixels.log";
+    }else{
+        *logFilename = log;
+    }
+
+    std::cout<<"Enter the palette path to file (default : palette.txt): ";
+    std::string palette;
+    getline(std::cin, palette);
+    if (palette == ""){
+        *paletteFilename = "palette.txt";
+    }else{
+        *paletteFilename = palette;
+    }
+
+    std::cout<<"Enter the background image path to file (default: canvas-initial.png): ";
+    std::string canvasInit;
+    getline(std::cin,canvasInit);
+    if (canvasInit == ""){
+        *canvasFileName = "canvas-initial.png";
+    }else{
+        *canvasFileName = canvasInit;
+    }
+
+    std::cout<<"Enter your timezone (default: CEST): ";
+    std::string timezone;
+    getline(std::cin,timezone);
+    if (timezone == ""){
+        timezone = "CEST";
+    }
+
+    std::cout<<"Draw all the pixels ? (yes|no*): ";
+    std::string fullcanvas;
+    bool bFullcanvas = false;
+    getline(std::cin,fullcanvas);
+    if (fullcanvas == "yes"){
+        bFullcanvas = true;
+    }
+
+    std::cout<<"Timelapse ? (yes|no*): ";
+    std::string timelapse;
+    bool bTimelapse = false;
+    getline(std::cin,timelapse);
+    if (timelapse == "yes"){
+        bTimelapse = true;
+    }
+
+    std::cout<<"Overlay with initial template ? (yes|no*): ";
+    std::string overlay;
+    bool bOverlay = false;
+    getline(std::cin,overlay);
+    if (overlay == "yes"){
+        bOverlay = true;
+    }
+
+    if (bTimelapse){
+        std::cout<<"Enter the crop area for timelapse (example : X0 X0+Xoff Y0 Y0+Yoff): ";
+        uint cropX, cropY, cropXoff, cropYoff;
+        std::cin >> cropX >> cropXoff >> cropY >> cropYoff;
+        std::vector<uint> cropArea = {cropX,cropXoff,cropY,cropYoff};
+        std::cin.ignore();
+        
+        std::cout<<"Heatmap ? (yes|no*): ";
+        std::string heatmap;
+        bool bHeatmap = false;
+        getline(std::cin,heatmap);
+        if (heatmap == "yes"){
+            bHeatmap = true;
+        }
+
+        std::cout<<"Enter timelapse starting date (example : YYYY-MM-DD HH:MM:SS): ";
+        std::string Date, Hour, beginDate;
+        std::cin >> Date >> Hour;
+        beginDate = Date + " " + Hour;
+        std::cin.ignore();
+
+        std::cout<<"Enter timelapse duration in seconds: ";
+        uint64_t duration;
+        std::cin >> duration;
+        std::cin.ignore();
+
+        std::cout<<"Enter frame interval in seconds: ";
+        uint interval;
+        std::cin >> interval;
+        std::cin.ignore();
+
+        std::cout << "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+        return canvas(cropArea,bTimelapse,bHeatmap,bOverlay,bFullcanvas,timezone,beginDate,duration,interval);
+    }else{
+        std::cout << "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+        return canvas(bFullcanvas,bOverlay,timezone);
+    }
 }
 
 void alphaMerge(cv::Mat src1, cv::Mat src2, cv::Mat dst){
@@ -109,11 +210,10 @@ void pxlsHash(std::vector<pxlsData> *pxlsList, std::string pxlsLogName, std::vec
     std::fstream logFile(pxlsLogName,std::ios::in);
     std::string logLine;
     std::string userKey;
-    std::string heatmapColor = "#0000FF";
     while (std::getline(logFile,logLine)){
         if(lineCount>=lineStart && lineCount<lineStop){
             pxlsData pxlsData(logLine,canvas);
-            heatmapColor = "#0000FF";
+            std::string heatmapColor = "#FF0000";
             for (int i = 0; i < userKeys.size(); i++){
                 userKey = userKeys.at(i);
                 if (userKey.find_first_of('#') == 0){
@@ -143,7 +243,7 @@ void pxlsHash(std::vector<pxlsData> *pxlsList, std::string pxlsLogName, std::vec
 
 std::vector<uint> hexToBGR(char const *hexColor){
     std::vector<uint> color = {0,0,0};
-    std::sscanf(hexColor,"#%02x%02x%02x",&color[0],&color[1],&color[2]);
+    std::sscanf(hexColor,"#%02x%02x%02x",&color[2],&color[1],&color[0]);
     return color;
 }
 

@@ -23,7 +23,6 @@ uchar red;
 uchar alpha;
 };
 
-void UI_init();
 std::vector<uint> hexToBGR(char const *hexColor);
 std::vector<std::string> lineParser(std::string line,char separator);
 uint64_t unixTimeConv(std::string strTime, std::string timezone);
@@ -53,13 +52,14 @@ public:
         std::cout<<"Canvas created!\n";
     }
 
-    canvas(bool fullcanvas, std::string timezone){
+    canvas(bool fullcanvas, bool overlay, std::string timezone){
         _fullCanvas = fullcanvas;
         _timezone = timezone;
+        _overlay = overlay;
         std::cout<<"Canvas created!\n";
     }
 
-    canvas(bool timelapse, bool heatmap, bool overlay, bool fullcanvas, std::string timezone,
+    canvas(std::vector<uint> crop, bool timelapse, bool heatmap, bool overlay, bool fullcanvas, std::string timezone,
         std::string timeBegin, uint64_t captureDuration, uint64_t frameDuration){
         _timelapse = timelapse;
         _heatmap = heatmap;
@@ -69,9 +69,13 @@ public:
         _timeBegin = unixTimeConv(timeBegin,timezone);
         _captureDuration = captureDuration*1000;
         _frameDuration = frameDuration*1000;
+        _crop = crop;
         std::cout<<"Canvas created!\n";
     }
 
+    std::vector<uint> cropSize(){
+        return _crop;
+    }
     std::string timezone(){
         return _timezone;
     }
@@ -121,6 +125,8 @@ public:
         std::cout<<"Pixel user(s): "<<_nbPixelsKeys<<" | Undo user(s): "<<_nbUndosKeys<<"\n";
     }
 };
+
+canvas UI_init(std::string *userkeyFilename, std::string *logFilename, std::string *paletteFilename, std::string *canvasFileName);
 
 class palette {
     std::vector<std::string> _names;
@@ -263,33 +269,38 @@ class drawing {
     cv::Mat _bgImg;
     cv::Mat _fgImg;
     cv::Mat _heatImg;
-    cv::VideoWriter _video;
+    cv::Range xcrop;
+    cv::Range ycrop;
 
 public:
     drawing(cv::Mat inputImg, canvas canvas){
+        std::vector<uint> cropSize = canvas.cropSize();
+        if ((cropSize[0]-cropSize[1] == 0) || (cropSize[2]-cropSize[3] == 0)){
+            xcrop = cv::Range(0,inputImg.size().width);
+            ycrop = cv::Range(0,inputImg.size().height);
+        }else{
+            xcrop = cv::Range(cropSize[0],cropSize[1]);
+            ycrop = cv::Range(cropSize[2],cropSize[3]);
+        }
+
         inputImg.copyTo(_bgImg);
         _fgImg.create(inputImg.size(),inputImg.type());
         _heatImg.create(inputImg.size(),inputImg.type());
         _outImg.create(inputImg.size(),inputImg.type());
-        if(canvas.timelapse()){
-            int fourcc = cv::VideoWriter::fourcc('M', 'J','P','G');
-            cv::Size videoSize(inputImg.size().width, inputImg.size().height);
-            _video.open("timelapse.avi",cv::CAP_OPENCV_MJPEG,fourcc,10,videoSize,true);
-        }
         std::cout<<"Brush created!\n";
-    }
-
-    ~drawing(){
-        if(_video.isOpened()){
-            _video.release();
-        }
     }
 
     void drawImage(std::vector<pxlsData> *pxlsList, palette palette, canvas canvas){
         uint64_t currentTime;
         uint64_t frameStart;
         uint64_t captureStop;
-
+        cv::VideoWriter video;
+        int fourcc = cv::VideoWriter::fourcc('a', 'v', 'c', '1');;
+        cv::Size videoSize(xcrop.size(),ycrop.size());
+        if(canvas.timelapse()){
+            video.open("timelapse.mp4",cv::CAP_FFMPEG,fourcc,10,videoSize,true);
+        }
+        
         std::cout<<"Drawing in progress...\n";
 
         if (canvas.timeBegin() == 0){
@@ -308,24 +319,35 @@ public:
         
         while (currentTime <= frameStart){
             currentTime = drawFrame(pxlsList,palette,canvas,currentTime);
-            if (canvas.timelapse()){
-                maskOp(canvas);
-            }
         }
         while (currentTime+canvas.frameDuration()<=captureStop){
             currentTime = drawFrame(pxlsList,palette,canvas,currentTime);
             if (canvas.timelapse()){
-                maskOp(canvas);
+                video.write(maskOp(canvas));
             }
         }
-        alphaMerge(_bgImg,_fgImg,_outImg);
+
+        if(canvas.overlay()){
+            alphaMerge(_bgImg,_fgImg,_outImg);
+        }else{
+            _outImg = _fgImg;
+        }
+
         cv::imwrite("placemap.png",_outImg);
         std::cout<<"Drawing finished!\n";
+        video.release();
+    }
+
+    void showPlacemap(){
+        cv::resize(_outImg,_outImg,_outImg.size()/2);
+        cv::imshow("Output Placemap",_outImg);
+        std::cout << "Press Esc to close.\n";
+        cv::waitKey();
     }
 
 private:
 
-    void maskOp(canvas canvas){
+    cv::Mat maskOp(canvas canvas){
         cv::Mat tempFrame(_bgImg.size(),_bgImg.type());
         if(canvas.overlay()){
             alphaMerge(_bgImg,_fgImg,tempFrame);
@@ -344,7 +366,8 @@ private:
             }
         }
         cv::cvtColor(tempFrame,tempFrame,cv::COLOR_BGRA2RGBA);
-        _video.write(tempFrame);
+        tempFrame = tempFrame(ycrop,xcrop);
+        return tempFrame;
     }
 
     void drawPxls(pxlsData pxlsData, palette palette){

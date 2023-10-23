@@ -3,7 +3,7 @@ Python script for log extraction from pxls.place pixels logs
 
 ### Timelapse example from [C72 canvas](https://archives.pxls.space/canvas-72) on osu! faction
 
-![osuExample](osuExample.gif)
+![osuExample](python_pxlslog/osuExample.gif)
 
 </br>
 

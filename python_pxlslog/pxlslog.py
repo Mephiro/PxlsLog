@@ -45,6 +45,7 @@ def hashFunc(usersKeys,myfile,logFilename):
                 for line in logfile:
                     [date, randomHash, x, y, colorIndex, action] = line.split('\t')    
                     digestFormat = ','.join([date, x, y, colorIndex, userKey])
+                    print(digestFormat);
                     digested = sha256(digestFormat.encode('utf-8')).hexdigest()
                     
                     if digested == randomHash:

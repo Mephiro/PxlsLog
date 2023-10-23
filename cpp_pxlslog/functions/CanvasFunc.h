@@ -320,9 +320,11 @@ public:
         
         while (currentTime <= frameStart){
             currentTime = drawFrame(pxlsList,palette,canvas,currentTime);
+            progress(currentTime,canvas.timeBegin(),captureStop);
         }
         while (currentTime+canvas.frameDuration()<=captureStop){
             currentTime = drawFrame(pxlsList,palette,canvas,currentTime);
+            progress(currentTime,canvas.timeBegin(),captureStop);
             if (canvas.timelapse()){
                 video.write(maskOp(canvas));
             }
@@ -335,7 +337,7 @@ public:
         }
 
         cv::imwrite("placemap.png",_outImg);
-        std::cout<<"Drawing finished!\n\n";
+        std::cout<<"\nDrawing finished!\n\n";
         if (canvas.timelapse()){
             //system("./avi2mp4.sh");
             video.release();
@@ -350,6 +352,10 @@ public:
     }
 
 private:
+
+    void progress(u_int64_t current, u_int64_t initial, u_int64_t target){
+        std::cout << "Progress :" << 100*(current - initial)/(target - initial) << "%\r";
+    }
 
     cv::Mat maskOp(canvas canvas){
         cv::Mat tempFrame(_bgImg.size(),_bgImg.type());

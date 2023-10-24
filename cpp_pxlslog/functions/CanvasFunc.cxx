@@ -88,8 +88,9 @@ canvas UI_init(std::string *userkeyFilename, std::string *logFilename, std::stri
         uint cropX, cropY, cropXoff, cropYoff;
         std::cin >> cropX >> cropXoff >> cropY >> cropYoff;
         std::vector<uint> cropArea = {cropX,cropXoff,cropY,cropYoff};
-        std::cin.ignore();
-        
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
         std::cout<<"Heatmap ? (yes|no*): ";
         std::string heatmap;
         bool bHeatmap = false;
@@ -102,17 +103,20 @@ canvas UI_init(std::string *userkeyFilename, std::string *logFilename, std::stri
         std::string Date, Hour, beginDate;
         std::cin >> Date >> Hour;
         beginDate = Date + " " + Hour;
-        std::cin.ignore();
-
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        
         std::cout<<"Enter timelapse duration in seconds: ";
         uint64_t duration;
         std::cin >> duration;
-        std::cin.ignore();
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         std::cout<<"Enter frame interval in seconds: ";
         uint interval;
         std::cin >> interval;
-        std::cin.ignore();
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         std::cout << "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
         return canvas(cropArea,bTimelapse,bHeatmap,bOverlay,bFullcanvas,timezone,beginDate,duration,interval);

@@ -10,3 +10,7 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 build/
+*.mp4
+*.avi
+!/tests/palette.txt
+!/tests/canvas-initial.png

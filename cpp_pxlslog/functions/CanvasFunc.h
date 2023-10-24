@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdlib.h>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -296,7 +295,7 @@ public:
         uint64_t frameStart;
         uint64_t captureStop;
         cv::VideoWriter video;
-        int fourcc = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');;
+        int fourcc = cv::VideoWriter::fourcc('M','J','P','G');
         cv::Size videoSize(xcrop.size(),ycrop.size());
         if(canvas.timelapse()){
             video.open("timelapse.avi",cv::CAP_OPENCV_MJPEG,fourcc,10,videoSize,true);

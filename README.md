@@ -29,4 +29,4 @@ N  Log_key_N
 
 ## Help to get your placemap/placegraph and do timelapses
 
-See in **/cpp_pxlslog** or **/python_pxlslog** !
+See in ![pythonPxlslog](python_pxlslog/) or ![cppPxlslog](cpp_pxlslog/) !

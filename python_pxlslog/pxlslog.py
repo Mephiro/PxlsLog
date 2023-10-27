@@ -13,7 +13,6 @@ from datetime import datetime
 import time
 import numpy as np
 import matplotlib.pyplot as plt  
-import cv2
 
 def brightnessFunc(img,coef):
     source = img.split()
@@ -45,7 +44,6 @@ def hashFunc(usersKeys,myfile,logFilename):
                 for line in logfile:
                     [date, randomHash, x, y, colorIndex, action] = line.split('\t')    
                     digestFormat = ','.join([date, x, y, colorIndex, userKey])
-                    print(digestFormat);
                     digested = sha256(digestFormat.encode('utf-8')).hexdigest()
                     
                     if digested == randomHash:
@@ -142,8 +140,7 @@ if timelapse == 'yes':
     timeBegin = int(time.mktime(timeBegin.timetuple())*1e3)
     durationSec = int(input('Enter duration of timelapse (in sec): '))
     interval = int(input('Enter interval between frames (in sec): '))
-    gifVideo = input("output type : gif* or video: ") or "gif"
-    gifFilename = input("Enter gif/video filename: ") or "animated"
+    gifFilename = input("Enter gif filename (default: animated): ") or "animated"
 else:
     timelapse = False
     heatmap = False
@@ -248,14 +245,7 @@ with Image.open(initCanvasFilename+".png") as im:
     print("Total number of undos: "+str(nbUndos))
 
     if timelapse == True:
-        if gifVideo == "video":
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            video = cv2.VideoWriter(gifFilename+".mp4",fourcc, 10,imgGif[0].size)
-            for img in imgGif:
-                video.write(cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR))
-            video.release()
-        else:
-            imgGif[0].save(gifFilename+".gif", optimize=True, save_all=True, append_images=imgGif[1:], duration=100, loop=0)
+        imgGif[0].save(gifFilename+".gif", optimize=True, save_all=True, append_images=imgGif[1:], duration=100, loop=0)
             
     im.save(outputFilename+".png","PNG")
     im.show()

@@ -14,3 +14,4 @@ build/
 *.avi
 !/tests/palette.txt
 !/tests/canvas-initial.png
+!/tests/timelapse_example.mp4

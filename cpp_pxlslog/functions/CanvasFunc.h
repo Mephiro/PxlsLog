@@ -156,7 +156,12 @@ public:
         return _names[colorIndex];
     }
     std::vector<uint> getColor(int colorIndex){
-        return _colors[colorIndex];
+        if (colorIndex == -1){
+            return {0,0,0,0};
+        }
+        std::vector<uint> currentColor = _colors[colorIndex];
+        currentColor.push_back(255);
+        return currentColor;
     }
     int getPaletteSize(){
         return _paletteSize;
@@ -302,12 +307,10 @@ public:
         }
         
         std::cout<<"Drawing in progress...\n";
-
         if (canvas.timeBegin() == 0){
             canvas.setTimes(pxlsList->at(0).getUnixTime(),pxlsList->back().getUnixTime(),
                             pxlsList->back().getUnixTime()-pxlsList->at(0).getUnixTime());
-         }
-
+        }
         captureStop = canvas.timeBegin()+canvas.captureDuration();
         if(canvas.timeBegin() >= pxlsList->at(0).getUnixTime()){
             currentTime = pxlsList->at(0).getUnixTime();
@@ -316,7 +319,7 @@ public:
             currentTime = canvas.timeBegin();
             frameStart = pxlsList->at(0).getUnixTime();
         }
-        
+
         while (currentTime <= frameStart){
             currentTime = drawFrame(pxlsList,palette,canvas,currentTime);
             progress(currentTime,canvas.timeBegin(),captureStop);
@@ -375,6 +378,7 @@ private:
             }
         }
         cv::cvtColor(tempFrame,tempFrame,cv::COLOR_BGRA2RGBA);
+        
         tempFrame = tempFrame(ycrop,xcrop);
         return tempFrame;
     }
@@ -383,7 +387,7 @@ private:
         std::vector<int> currentCoord = pxlsData.getCoord();
         std::vector<uint> currentColor = palette.getColor(pxlsData.getColorIndex());
         cv::circle(_fgImg,cv::Point(currentCoord[0],currentCoord[1]),0,
-        cv::Scalar(currentColor[0],currentColor[1],currentColor[2],255),cv::FILLED);
+        cv::Scalar(currentColor[0],currentColor[1],currentColor[2],currentColor[3]),cv::FILLED);
     }
 
     void drawPxls(pxlsData pxlsData){

@@ -14,7 +14,7 @@ pxls::palette palette(paletteFileName);
 
 std::vector<pxls::pxlsData> pxlsList;
 
-pxls::threadingHash(6,&pxlsList,logFileName,userKeysName,&canvas);
+pxls::threadingHash(8,&pxlsList,logFileName,userKeysName,&canvas);
 
 canvas.printPixelNum();
 

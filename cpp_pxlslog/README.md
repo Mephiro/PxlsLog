@@ -1,9 +1,9 @@
 # PxlsLog
 c++ script for log extraction from pxls.place pixels logs
 
-### Timelapse example from [C73 canvas](https://archives.pxls.space/canvas-73) on full canvas
+### Timelapse example from [C74 canvas](https://archives.pxls.space/canvas-74) on osu! faction
 
-https://github.com/Mephiro/PxlsLog/assets/37735944/a2134c2e-5618-4ce1-996c-5dd560408316
+https://github.com/Mephiro/PxlsLog/assets/37735944/2a332f67-6005-4f31-b5bf-6b0b947f6328
 
 </br>
 

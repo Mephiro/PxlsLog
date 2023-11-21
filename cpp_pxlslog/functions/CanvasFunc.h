@@ -308,8 +308,9 @@ public:
         
         std::cout<<"Drawing in progress...\n";
         if (canvas.timeBegin() == 0){
-            canvas.setTimes(pxlsList->at(0).getUnixTime(),pxlsList->back().getUnixTime(),
-                            pxlsList->back().getUnixTime()-pxlsList->at(0).getUnixTime());
+            canvas.setTimes(pxlsList->at(0).getUnixTime(),
+            pxlsList->back().getUnixTime()-pxlsList->at(0).getUnixTime(),
+            36000);
         }
         captureStop = canvas.timeBegin()+canvas.captureDuration();
         if(canvas.timeBegin() >= pxlsList->at(0).getUnixTime()){
@@ -317,7 +318,7 @@ public:
             frameStart = canvas.timeBegin();
         }else{
             currentTime = canvas.timeBegin();
-            frameStart = pxlsList->at(0).getUnixTime();
+            frameStart = canvas.timeBegin();
         }
 
         while (currentTime <= frameStart){

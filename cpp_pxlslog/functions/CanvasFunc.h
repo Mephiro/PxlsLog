@@ -120,9 +120,14 @@ public:
     std::vector<uint64_t> getPixelNum(){
         return {_nbPixelsTotal,_nbUndosTotal,_nbPixelsKeys,_nbUndosKeys};
     }
-    void printPixelNum(){
+    int printPixelNum(){
+        if (_nbPixelsKeys == 0){
+            std::cerr<<"Error with the given log key !\nStopping...";
+            return 1;
+        }
         std::cout<<"Pixel total canvas: "<<_nbPixelsTotal<<" | Undo total canvas: "<<_nbUndosTotal<<"\n";
         std::cout<<"Pixel user(s): "<<_nbPixelsKeys<<" | Undo user(s): "<<_nbUndosKeys<<"\n";
+        return 0;
     }
 };
 

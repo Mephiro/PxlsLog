@@ -16,7 +16,9 @@ std::vector<pxls::pxlsData> pxlsList;
 
 pxls::threadingHash(8,&pxlsList,logFileName,userKeysName,&canvas);
 
-canvas.printPixelNum();
+if (canvas.printPixelNum() > 0){
+    return 1;
+}
 
 drawing.drawImage(&pxlsList,palette,canvas);
 

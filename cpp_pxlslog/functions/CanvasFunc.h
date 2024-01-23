@@ -46,10 +46,10 @@ class canvas {
     uint64_t _nbUndosTotal = 0;
     uint64_t _nbPixelsKeys = 0;
     uint64_t _nbUndosKeys = 0;
-    
+
 public:
     canvas(){
-        std::cout<<"Canvas created!\n";
+        //Empty constructor
     }
 
     canvas(bool fullcanvas, bool overlay, std::string timezone){

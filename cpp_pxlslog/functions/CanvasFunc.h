@@ -7,6 +7,7 @@
 #include <thread>
 #include <mutex>
 #include <openssl/evp.h>
+#include <openssl/sha.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
@@ -421,4 +422,5 @@ private:
 
 namespace hash{
     bool isMyPxls(const std::string digest,const std::string randomHash);
+    bool isMyPxls2(const std::string digest,const std::string randomHash);
 }

@@ -311,12 +311,36 @@ bool isMyPxls(const std::string digest,const std::string randomHash){
     EVP_DigestUpdate(sha256,msg,msgSize);
     EVP_DigestFinal_ex(sha256,hash,&msgSize);
 
-    std::stringstream ss;
+    static const char characters[] = "0123456789abcdef";
+    std::string result (SHA256_DIGEST_LENGTH * 2, ' ');
     for(int i = 0; i < SHA256_DIGEST_LENGTH; i++)
     {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+        result[2*i] = characters[(unsigned int) hash[i] >> 4];
+        result[2*i+1] = characters[(unsigned int) hash[i] & 0x0F];
     }
-    std::string result = ss.str();
+
+    return result==randomHash;
+}
+
+bool isMyPxls2(const std::string digest,const std::string randomHash){
+    unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
+
+    char *msg = (char*)digest.c_str();
+    unsigned int msgSize = strlen(msg);
+
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256,msg,msgSize);
+    SHA256_Final(hash,&sha256);
+
+    static const char characters[] = "0123456789abcdef";
+    std::string result (SHA256_DIGEST_LENGTH * 2, ' ');
+    for(int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+    {
+        result[2*i] = characters[(unsigned int) hash[i] >> 4];
+        result[2*i+1] = characters[(unsigned int) hash[i] & 0x0F];
+    }
+
     return result==randomHash;
 }
 }

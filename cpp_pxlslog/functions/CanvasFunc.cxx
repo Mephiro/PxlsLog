@@ -105,7 +105,7 @@ canvas UI_init(std::string *userkeyFilename, std::string *logFilename, std::stri
         beginDate = Date + " " + Hour;
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        
+
         std::cout<<"Enter timelapse duration in seconds: ";
         uint64_t duration;
         std::cin >> duration;
@@ -122,7 +122,7 @@ canvas UI_init(std::string *userkeyFilename, std::string *logFilename, std::stri
         return canvas(cropArea,bTimelapse,bHeatmap,bOverlay,bFullcanvas,timezone,beginDate,duration,interval);
     }else{
         std::cout << "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
-        return canvas(bFullcanvas,bOverlay,timezone);
+        return canvas(bTimelapse,0,bOverlay,bFullcanvas);
     }
 }
 
@@ -225,7 +225,7 @@ void pxlsHash(std::vector<pxlsData> *pxlsList, std::string pxlsLogName, std::vec
                     heatmapColor = userKey;
                 }else{
                     std::string digest = pxlsData.pxlsDigest(userKey);
-                    if(hash::isMyPxls(digest,pxlsData.getRandomHash())){
+                    if(hash::isMyPxls2(digest,pxlsData.getRandomHash())){
                         pxlsData.addHeatColor(heatmapColor);
                         pxlsData.setMyPixel(true);
                         i = userKeys.size();
@@ -311,12 +311,36 @@ bool isMyPxls(const std::string digest,const std::string randomHash){
     EVP_DigestUpdate(sha256,msg,msgSize);
     EVP_DigestFinal_ex(sha256,hash,&msgSize);
 
-    std::stringstream ss;
+    static const char characters[] = "0123456789abcdef";
+    std::string result (SHA256_DIGEST_LENGTH * 2, ' ');
     for(int i = 0; i < SHA256_DIGEST_LENGTH; i++)
     {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+        result[2*i] = characters[(unsigned int) hash[i] >> 4];
+        result[2*i+1] = characters[(unsigned int) hash[i] & 0x0F];
     }
-    std::string result = ss.str();
+
+    return result==randomHash;
+}
+
+bool isMyPxls2(const std::string digest,const std::string randomHash){
+    unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
+
+    char *msg = (char*)digest.c_str();
+    unsigned int msgSize = strlen(msg);
+
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256,msg,msgSize);
+    SHA256_Final(hash,&sha256);
+
+    static const char characters[] = "0123456789abcdef";
+    std::string result (SHA256_DIGEST_LENGTH * 2, ' ');
+    for(int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+    {
+        result[2*i] = characters[(unsigned int) hash[i] >> 4];
+        result[2*i+1] = characters[(unsigned int) hash[i] & 0x0F];
+    }
+
     return result==randomHash;
 }
 }

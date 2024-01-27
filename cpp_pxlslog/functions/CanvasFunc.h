@@ -7,6 +7,7 @@
 #include <thread>
 #include <mutex>
 #include <openssl/evp.h>
+#include <openssl/sha.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
@@ -52,10 +53,11 @@ public:
         //Empty constructor
     }
 
-    canvas(bool fullcanvas, bool overlay, std::string timezone){
-        _fullCanvas = fullcanvas;
-        _timezone = timezone;
+    canvas(bool timelapse, bool heatmap, bool overlay, bool fullcanvas){
+	_timelapse = timelapse;
+	_heatmap = heatmap;
         _overlay = overlay;
+        _fullCanvas = fullcanvas;
         std::cout<<"Canvas created!\n";
     }
 
@@ -103,7 +105,7 @@ public:
     void setTimes(uint64_t timeBegin,uint64_t captureDuration,uint64_t frameDuration){
         _timeBegin = timeBegin;
         _captureDuration = captureDuration;
-        _frameDuration = frameDuration;
+        _frameDuration = frameDuration*1000;
     }
     void addPixelsTot(){
         _nbPixelsTotal +=1;
@@ -122,7 +124,7 @@ public:
     }
     int printPixelNum(){
         if (_nbPixelsKeys == 0){
-            std::cerr<<"Error with the given log key !\nStopping...";
+            std::cerr<<"Error with the given log key ! Stopping...";
             return 1;
         }
         std::cout<<"Pixel total canvas: "<<_nbPixelsTotal<<" | Undo total canvas: "<<_nbUndosTotal<<"\n";
@@ -156,7 +158,7 @@ public:
         _paletteSize = _colors.size();
         std::cout<<"Palette created!\n";
     }
-    
+
     std::string getColorName(int colorIndex){
         return _names[colorIndex];
     }
@@ -310,12 +312,13 @@ public:
         if(canvas.timelapse()){
             video.open("timelapse.avi",cv::CAP_OPENCV_MJPEG,fourcc,10,videoSize,true);
         }
-        
+
         std::cout<<"Drawing in progress...\n";
         if (canvas.timeBegin() == 0){
-            canvas.setTimes(pxlsList->at(0).getUnixTime(),
-            pxlsList->back().getUnixTime()-pxlsList->at(0).getUnixTime(),
-            36000);
+            uint64_t frame = 7200;
+	    uint64_t start = pxlsList->at(0).getUnixTime()-(frame*10000);
+	    uint64_t stop = pxlsList->back().getUnixTime()-start+(frame*20000);
+            canvas.setTimes(start,stop,frame);
         }
         captureStop = canvas.timeBegin()+canvas.captureDuration();
         if(canvas.timeBegin() >= pxlsList->at(0).getUnixTime()){
@@ -326,7 +329,7 @@ public:
             frameStart = canvas.timeBegin();
         }
 
-        while (currentTime <= frameStart){
+        while (currentTime < frameStart){
             currentTime = drawFrame(pxlsList,palette,canvas,currentTime);
             progress(currentTime,canvas.timeBegin(),captureStop);
         }
@@ -384,7 +387,7 @@ private:
             }
         }
         cv::cvtColor(tempFrame,tempFrame,cv::COLOR_BGRA2RGBA);
-        
+
         tempFrame = tempFrame(ycrop,xcrop);
         return tempFrame;
     }
@@ -421,4 +424,5 @@ private:
 
 namespace hash{
     bool isMyPxls(const std::string digest,const std::string randomHash);
+    bool isMyPxls2(const std::string digest,const std::string randomHash);
 }
